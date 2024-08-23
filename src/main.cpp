@@ -1,34 +1,44 @@
 
 #include <Arduino.h>
+#include <SPI.h>
+#include <Ethernet.h>
+#include <SD.h>
 #include "MQTT.h"
-#include "EmonLib.h"
+#include "WebPage.h"
 
-EnergyMonitor emon1;
+const int chipSelect = 4;
+EthernetServer ethServer(80);
 
 unsigned long prevTimeStamp = 0;   // variabile per memorizzare l'ultimo momento in cui l'azione è stata eseguita
 unsigned long interval = 10000;     // intervallo tra le azioni (10 secondi)
 
 EthernetClient ethClient;
-PubSubClient client(ethClient);
+PubSubClient MQTTclient(ethClient);
 
 
 // Update these with values suitable for your network.
 byte mac[]    = {  0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xED };
-IPAddress server(192, 168, 2, 1);
+IPAddress MQTTserverIP(192, 168, 2, 1);
 IPAddress ip(192, 168, 2, 2);
 
 void setup() {
 
   Serial.begin(9600);
-  Ethernet.begin(mac, ip);
-
-  emon1.current(0, 111.1);             // Current: input pin, calibration.
   
-  client.setServer(server, 1883);
-  client.setCallback(callback);
+  // Inizializza la scheda SD
+  if (!SD.begin(chipSelect)) {
+    Serial.println("Errore nell'inizializzazione della scheda SD!");
+    return;
+  }
 
-  if (client.connect("arduinoClient")) {
-    client.subscribe("stecapeSensors");
+  Ethernet.begin(mac, ip);
+  ethServer.begin();
+  
+  MQTTclient.setServer(MQTTserverIP, 1883);
+  MQTTclient.setCallback(callback);
+
+  if (MQTTclient.connect("TestClient01")) {
+    MQTTclient.subscribe("Sensors");
   }
   // Allow the hardware to sort itself out
   delay(1500);
@@ -37,16 +47,21 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   
-  if (!client.connected()) {
-    reconnect(client);
+  if (!MQTTclient.connected()) {
+    reconnect(MQTTclient);
   }
 
   unsigned long actualTimeStamp = millis();
   
-  if (client.connected() && actualTimeStamp - prevTimeStamp >= interval) {
+  if (MQTTclient.connected() && actualTimeStamp - prevTimeStamp >= interval) {
     prevTimeStamp = actualTimeStamp;
-    double Irms = emon1.calcIrms(1480);  // Calculate Irms only
-    client.publish("current1",String(random(0, 100)).c_str());
-    
+    String Variable = readVariable(0);
+    MQTTclient.publish("current1",Variable.c_str());    
   }
+
+  
+    ethClient = ethServer.available();
+    if (ethClient) {
+        handleClient(ethClient);
+    }
 }
