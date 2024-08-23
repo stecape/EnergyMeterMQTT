@@ -1,36 +1,38 @@
 #include "MQTT.h"
+#include <Ethernet.h>
+#include <PubSubClient.h>
 
+// Definisci l'indirizzo del broker MQTT
+IPAddress MQTTserverIP(192, 168, 2, 1);
+
+// Funzione di callback per la gestione dei messaggi in arrivo
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (unsigned int i=0;i<length;i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
+    Serial.print("Message arrived [");
+    Serial.print(topic);
+    Serial.print("] ");
+    for (unsigned int i = 0; i < length; i++) {
+        Serial.print((char)payload[i]);
+    }
+    Serial.println();
 }
 
-void reconnect(PubSubClient client)
-{
-    // Loop until we're reconnected
-    while (!client.connected())
-    {
+// Funzione per configurare il client MQTT
+void setupMQTT(PubSubClient& client) {
+    client.setServer(MQTTserverIP, 1883);
+    client.setCallback(callback);
+}
+
+// Funzione per riconnettere il client MQTT in caso di disconnessione
+void reconnect(PubSubClient& client) {
+    while (!client.connected()) {
         Serial.print("Attempting MQTT connection...");
-        // Attempt to connect
-        if (client.connect("arduinoClient"))
-        {
+        if (client.connect("MQTTClientTest01")) {
             Serial.println("connected");
-            // Once connected, publish an announcement...
-            client.publish("outTopic", "hello world");
-            // ... and resubscribe
-            client.subscribe("inTopic");
-        }
-        else
-        {
+            client.subscribe("test/topic");
+        } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());
             Serial.println(" try again in 5 seconds");
-            // Wait 5 seconds before retrying
             delay(5000);
         }
     }
