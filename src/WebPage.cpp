@@ -17,7 +17,7 @@ void handleClient(EthernetClient client) {
                             if (idx != -1) {
                                 String key = postData.substring(0, idx);
                                 String value = postData.substring(idx + 1);
-                                updateVariable(0, value.c_str()); // Salva il valore all'indirizzo 0
+                                saveString(0, value.c_str()); // Salva il valore all'indirizzo 0
                             }
                         }
 
