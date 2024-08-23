@@ -28,7 +28,6 @@ void setup() {
   client.setCallback(callback);
 
   if (client.connect("arduinoClient")) {
-    client.publish("current1","0");
     client.subscribe("stecapeSensors");
   }
   // Allow the hardware to sort itself out
@@ -44,10 +43,10 @@ void loop() {
 
   unsigned long actualTimeStamp = millis();
   
-  if (actualTimeStamp - prevTimeStamp >= interval) {
+  if (client.connected() && actualTimeStamp - prevTimeStamp >= interval) {
     prevTimeStamp = actualTimeStamp;
     double Irms = emon1.calcIrms(1480);  // Calculate Irms only
-    client.publish("current1",String(Irms).c_str());
+    client.publish("current1",String(random(0, 100)).c_str());
     
   }
 }
