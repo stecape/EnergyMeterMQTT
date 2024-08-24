@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include <SPI.h>
 #include <Ethernet.h>
@@ -12,9 +11,8 @@ EthernetServer WebPageEthServer(80);
 unsigned long prevTimeStamp = 0;   // variabile per memorizzare l'ultimo momento in cui l'azione è stata eseguita
 unsigned long interval = 10000;     // intervallo tra le azioni (10 secondi)
 
-EthernetClient ethClient;
-PubSubClient MQTTclient(ethClient);
-
+EthernetClient MQTTethClient;
+PubSubClient MQTTclient(MQTTethClient);
 
 // Update these with values suitable for your network.
 byte mac[]    = {  0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xED };
