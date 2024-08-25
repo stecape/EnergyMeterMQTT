@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Ethernet.h>
-#include <SD.h>
+//#include <SD.h>
 #include "MQTT.h"
 #include "WebPage.h"
 
@@ -23,10 +23,10 @@ void setup() {
   Serial.begin(9600);
   
   // Inizializza la scheda SD
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Errore nell'inizializzazione della scheda SD!");
-    return;
-  }
+  // if (!SD.begin(chipSelect)) {
+  //   Serial.println("Errore nell'inizializzazione della scheda SD!");
+  //   return;
+  // }
 
   Ethernet.begin(mac, ip);
   WebPageEthServer.begin();

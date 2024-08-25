@@ -196,6 +196,7 @@ void handleClient(EthernetClient client) {
         }
         Serial.print("Stringa ricevuta: ");
         Serial.println(start);
+        saveString(0, start); // Salva il valore all'indirizzo 0
       } else {
         Serial.println("Stringa non trovata nel buffer");
       }
