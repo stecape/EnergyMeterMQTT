@@ -5,7 +5,7 @@
 #include <Ethernet.h>
 
 // Funzioni per gestire il client
-void handleClient(EthernetClient client);
+void handleClient(EthernetClient client, uint8_t EEPROMipAddr);
 
 // Funzioni per salvare, leggere e aggiornare variabili intere
 void saveInt(int address, int value);

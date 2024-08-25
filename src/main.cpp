@@ -4,6 +4,15 @@
 //#include <SD.h>
 #include "MQTT.h"
 #include "WebPage.h"
+#include <EEPROM.h>
+
+// Dimensione dell'indirizzo IP (4 byte)
+#define IP_SIZE 4
+// Variabile per l'indirizzo IP
+byte ip[IP_SIZE];
+
+// Indirizzo IP di default
+byte defaultIP[IP_SIZE] = { 192, 168, 2, 2 };
 
 const int chipSelect = 4;
 EthernetServer WebPageEthServer(80);
@@ -16,7 +25,6 @@ PubSubClient MQTTclient(MQTTethClient);
 
 // Update these with values suitable for your network.
 byte mac[]    = {  0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xED };
-IPAddress ip(192, 168, 2, 2);
 
 void setup() {
 
@@ -28,7 +36,36 @@ void setup() {
   //   return;
   // }
 
-  Ethernet.begin(mac, ip);
+  // Legge l'indirizzo IP dalla EEPROM
+  bool ipValido = true;
+  for (int i = 0; i < IP_SIZE; i++) {
+    ip[i] = EEPROM.read(i);
+    if (ip[i] == 0xFF) { // Verifica se l'IP in EEPROM non è valorizzato
+      ipValido = false;
+    }
+  }
+
+  // Se l'IP non è valido, scrive l'indirizzo IP di default nella EEPROM
+  if (!ipValido) {
+    for (int i = 0; i < IP_SIZE; i++) {
+      ip[i] = defaultIP[i];
+      EEPROM.write(i, defaultIP[i]);
+    }
+    Serial.println("IP non valido in EEPROM, scritto IP di default.");
+  } else {
+    Serial.println("IP letto dalla EEPROM.");
+
+  // Stampa l'indirizzo IP utilizzato
+  Serial.print("Indirizzo IP: ");
+  for (int i = 0; i < IP_SIZE; i++) {
+    Serial.print(ip[i]);
+    if (i < IP_SIZE - 1) {
+      Serial.print(".");
+    }
+  }
+  Serial.println();
+  }
+  Ethernet.begin(mac,ip);
   WebPageEthServer.begin();
   setupMQTT(MQTTclient);
 
@@ -54,6 +91,6 @@ void loop() {
   EthernetClient WebPageEthClient = WebPageEthServer.available();
   
   if (WebPageEthClient) {
-      handleClient(WebPageEthClient);
+      handleClient(WebPageEthClient, 0);
   }
 }
