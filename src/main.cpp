@@ -55,15 +55,15 @@ void setup() {
   } else {
     Serial.println("IP letto dalla EEPROM.");
 
-  // Stampa l'indirizzo IP utilizzato
-  Serial.print("Indirizzo IP: ");
-  for (int i = 0; i < IP_SIZE; i++) {
-    Serial.print(ip[i]);
-    if (i < IP_SIZE - 1) {
-      Serial.print(".");
+    // Stampa l'indirizzo IP utilizzato
+    Serial.print("Indirizzo IP: ");
+    for (int i = 0; i < IP_SIZE; i++) {
+      Serial.print(ip[i]);
+      if (i < IP_SIZE - 1) {
+        Serial.print(".");
+      }
     }
-  }
-  Serial.println();
+    Serial.println();
   }
   Ethernet.begin(mac,ip);
   WebPageEthServer.begin();
