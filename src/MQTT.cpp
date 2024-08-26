@@ -4,6 +4,8 @@
 
 // Definisci l'indirizzo del broker MQTT
 IPAddress MQTTserverIP(192, 168, 2, 1);
+unsigned long prevTimeStamp = 0;   // variabile per memorizzare l'ultimo momento in cui l'azione è stata eseguita
+
 
 // Funzione di callback per la gestione dei messaggi in arrivo
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -17,7 +19,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 // Funzione per configurare il client MQTT
-void setupMQTT(PubSubClient& client) {
+void MQTT::setup(PubSubClient& client) {
     client.setServer(MQTTserverIP, 1883);
     client.setCallback(callback);
 }
@@ -36,4 +38,19 @@ void reconnect(PubSubClient& client) {
             delay(5000);
         }
     }
+}
+
+// Funzione per riconnettere il client MQTT in caso di disconnessione
+void MQTT::loopManagement(PubSubClient& client, unsigned long actualTimeStamp, unsigned long interval) {
+  if (!client.connected()) {
+    reconnect(client);
+  }
+  client.loop();
+ 
+  
+  if (client.connected() && actualTimeStamp - prevTimeStamp >= interval) {
+    prevTimeStamp = actualTimeStamp;
+    String Variable = String(random(0, 100));
+    client.publish("current1",Variable.c_str());    
+  }
 }

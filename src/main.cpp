@@ -17,7 +17,7 @@ byte defaultIP[IP_SIZE] = { 192, 168, 2, 2 };
 const int chipSelect = 4;
 EthernetServer WebPageEthServer(80);
 
-unsigned long prevTimeStamp = 0;   // variabile per memorizzare l'ultimo momento in cui l'azione è stata eseguita
+unsigned long actualTimeStamp = 0;
 unsigned long interval = 10000;     // intervallo tra le azioni (10 secondi)
 
 EthernetClient MQTTethClient;
@@ -67,29 +67,18 @@ void setup() {
   }
   Ethernet.begin(mac,ip);
   WebPageEthServer.begin();
-  setupMQTT(MQTTclient);
+
+  MQTT::setup(MQTTclient);
 
   // Allow the hardware to sort itself out
   delay(1500);
 }
 
 void loop() {
-  if (!MQTTclient.connected()) {
-    reconnect(MQTTclient);
-  }
-  MQTTclient.loop();
- 
- 
-  unsigned long actualTimeStamp = millis();
-  
-  if (MQTTclient.connected() && actualTimeStamp - prevTimeStamp >= interval) {
-    prevTimeStamp = actualTimeStamp;
-    String Variable = readString(0);
-    MQTTclient.publish("current1",Variable.c_str());    
-  }
+  actualTimeStamp = millis();
+  MQTT::loopManagement(MQTTclient, actualTimeStamp, interval);
 
   EthernetClient WebPageEthClient = WebPageEthServer.available();
-  
   if (WebPageEthClient) {
       handleClient(WebPageEthClient, 0);
   }
