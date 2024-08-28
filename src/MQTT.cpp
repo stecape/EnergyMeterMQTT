@@ -96,6 +96,6 @@ void MQTT::loopManagement(unsigned long actualTimeStamp, uint8_t EEPROMIntervalA
   
   if (MQTTclient.connected() && actualTimeStamp - prevTimeStamp >= INTERVAL) {
     prevTimeStamp = actualTimeStamp;
-    MQTTclient.publish("current1",String(random(0, 100)).c_str());    
+    MQTTclient.publish("current1","42");    
   }
 }

@@ -45,6 +45,7 @@ void Web::setup(EthernetServer& ethServer, uint8_t EEPROMIpAddr){
 }
 
 void Web::loopManagement(EthernetClient client, uint8_t EEPROMIpAddr, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
+  
   if (client) {
     String request = client.readStringUntil('\r');
     client.flush();
