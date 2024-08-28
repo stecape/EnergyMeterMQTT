@@ -1,12 +1,9 @@
 #include <Arduino.h>
-#include <PubSubClient.h>
 #include <Ethernet.h>
 #include "MQTT.h"
 #include "WebPage.h"
 
 EthernetServer ethServer(80);
-EthernetClient MQTTethClient;
-PubSubClient MQTTclient(MQTTethClient);
 
 ///////Definizioni
 // Indirizzo in memoria EEPROM dell'IP (4byte)
@@ -24,11 +21,11 @@ unsigned long actualTimeStamp = 0;
 
 void setup() {
   Serial.begin(9600);
+  Serial.println();
 
   Web::setup(ethServer, EEPROM_IP_ADDRESS);
-  //MQTT::setup(MQTTclient, EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS, EEPROM_INTERVAL_ADDRESS);
+  MQTT::setup(EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS);
 
-  // Allow the hardware to sort itself out
   delay(1500);
 }
 
@@ -38,5 +35,5 @@ void loop() {
   if(ethClient){
     Web::loopManagement(ethClient, EEPROM_IP_ADDRESS, EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS);
   }
-  //MQTT::loopManagement(MQTTclient, actualTimeStamp);
+  MQTT::loopManagement(actualTimeStamp, EEPROM_INTERVAL_ADDRESS);
 }

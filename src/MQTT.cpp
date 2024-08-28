@@ -1,23 +1,25 @@
 #include "MQTT.h"
 #include <EEPROM.h>
+#include <Ethernet.h>
 
 // Dimensione dell'indirizzo IP (4 byte)
 #define IP_SIZE 4
+// Definizione del refresh rate del sensore
+#define INTERVAL 10000
+
+EthernetClient MQTTethClient;
+PubSubClient MQTTclient(MQTTethClient);
 
 // variabile per memorizzare l'ultimo momento in cui l'azione è stata eseguita
 unsigned long prevTimeStamp = 0;
-// refresh rate del sensore
-unsigned long interval;
 
-void MQTT::setup(PubSubClient& client, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr, uint8_t EEPROMIntervalAddr) {
+void MQTT::setup(uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
   // Variabile per l'indirizzo IP
   byte ip[IP_SIZE];
   // Indirizzo IP di default
   byte defaultIP[IP_SIZE] = { 192, 168, 2, 1 };
   // Porta del broker MQTT di default
   uint16_t MQTTBrokerDefaultPort = 1883;
-  // Intervallo di lettura del sensore di default
-  unsigned long defaultInterval = 10000;
 
   // Legge l'indirizzo IP Mqtt broker dalla EEPROM
   bool ipValido = true;
@@ -65,33 +67,15 @@ void MQTT::setup(PubSubClient& client, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMM
     Serial.print("Porta dell'Mqtt broker: ");
     Serial.println(porta);
   }
-
-  // Legge l'intervallo di lettura del sensore dalla EEPROM
-  bool intervalloValido = true;
-  EEPROM.get(EEPROMIntervalAddr, interval);
-  if (interval == 0xFFFFFFFF || interval == 0) { // Verifica se l'intervallo di lettura del sensore in EEPROM non è valorizzato
-    intervalloValido = false;
-  }
-  // Se l'intervallo di lettura del sensore non è valido, scrive quello di default nella EEPROM
-  if (!intervalloValido) {
-      interval = defaultInterval;
-      EEPROM.put(EEPROMIntervalAddr, defaultInterval);
-    Serial.println("Intervallo di lettura del sensore non valido in EEPROM, scritto quello di default.");
-  } else {
-    Serial.println("Intervallo di lettura del sensore letto dalla EEPROM.");
-    // Stampa l'intervallo di lettura del sensore utilizzato
-    Serial.print("Intervallo di lettura del sensore : ");
-    Serial.println(interval);
-  }
-
-  client.setServer(ip, porta);
+  
+  MQTTclient.setServer(ip, porta);
 }
 
 // Funzione per riconnettere il client MQTT in caso di disconnessione
 void reconnect(PubSubClient& client) {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    if (client.connect("MQTTClientTest01")) {
+    if (client.connect("MQTTClientTest02")) {
       Serial.println("connected");
     } else {
       Serial.print("failed, rc=");
@@ -103,16 +87,15 @@ void reconnect(PubSubClient& client) {
 }
 
 // Funzione per riconnettere il client MQTT in caso di disconnessione
-void MQTT::loopManagement(PubSubClient& client, unsigned long actualTimeStamp) {
-  if (!client.connected()) {
-    reconnect(client);
+void MQTT::loopManagement(unsigned long actualTimeStamp, uint8_t EEPROMIntervalAddr) {
+   if (!MQTTclient.connected()) {
+    reconnect(MQTTclient);
   }
-  client.loop();
+  MQTTclient.loop();
  
   
-  if (client.connected() && actualTimeStamp - prevTimeStamp >= interval) {
+  if (MQTTclient.connected() && actualTimeStamp - prevTimeStamp >= INTERVAL) {
     prevTimeStamp = actualTimeStamp;
-    String Variable = String(random(0, 100));
-    client.publish("current1",Variable.c_str());    
+    MQTTclient.publish("current1",String(random(0, 100)).c_str());    
   }
 }
