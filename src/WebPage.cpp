@@ -67,7 +67,7 @@ void Web::loopManagement(EthernetClient client, uint8_t EEPROMIpAddr, uint8_t EE
       sscanf(body.c_str(), "ip1=%d&ip2=%d&ip3=%d&ip4=%d", &ipBytes[0], &ipBytes[1], &ipBytes[2], &ipBytes[3]);
 
       for (int i = 0; i < IP_SIZE; i++) {
-        EEPROM.write(i, ipBytes[i]);
+        EEPROM.write(i+EEPROMIpAddr, ipBytes[i]);
       }
 
       // Stampa l'indirizzo IP utilizzato
@@ -89,7 +89,48 @@ void Web::loopManagement(EthernetClient client, uint8_t EEPROMIpAddr, uint8_t EE
       client.stop();
 
       Serial.println("Indirizzo IP aggiornato e salvato nella EEPROM. Riavvia per renderlo effettivo");
-    } else {
+    }
+    else if (request.indexOf("POST /set_mqtt__broker_ip") != -1) {
+      // Legge l'header della richiesta
+      while (client.available()) {
+        String line = client.readStringUntil('\n');
+        if (line == "\r") {
+          break;
+        }
+      }
+
+      // Legge il corpo della richiesta
+      String body = client.readStringUntil('\n');
+      client.flush();
+
+      int ipBytes[IP_SIZE];
+      sscanf(body.c_str(), "ipb1=%d&ipb2=%d&ipb3=%d&ipb4=%d", &ipBytes[0], &ipBytes[1], &ipBytes[2], &ipBytes[3]);
+
+      for (int i = 0; i < IP_SIZE; i++) {
+        EEPROM.write(i+EEPROMMqttIpAddr, ipBytes[i]);
+      }
+
+      // Stampa l'indirizzo IP utilizzato
+      Serial.print("Indirizzo IP MQTT Broker: ");
+      for (int i = 0; i < IP_SIZE; i++) {
+        Serial.print(ipBytes[i]);
+        if (i < IP_SIZE - 1) {
+          Serial.print(".");
+        }
+      }
+      Serial.println();
+      Serial.println(body.c_str());  
+
+
+      client.println("HTTP/1.1 200 OK");
+      client.println("Content-Type: text/html");
+      client.println();
+      client.println("<html><body><h1>IP MQTT Broker Aggiornato</h1></body></html>");
+      client.stop();
+
+      Serial.println("Indirizzo IP MQTT Broker aggiornato e salvato nella EEPROM. Riavvia per renderlo effettivo");
+    }
+    else {
       client.println("HTTP/1.1 200 OK");
       client.println("Content-Type: text/html");
       client.println();
@@ -107,6 +148,23 @@ void Web::loopManagement(EthernetClient client, uint8_t EEPROMIpAddr, uint8_t EE
       client.println("' required><br><br>");
       client.print("Byte 4: <input type='number' name='ip4' min='2' max='255' value='");
       client.print(EEPROM.read(EEPROMIpAddr+3));
+      client.println("' required><br><br>");
+      client.println("<button type='submit'>Invia</button>");
+      client.println("</form>");
+      client.println("<br><br>");
+      client.println("<h1>Imposta Indirizzo IP MQTT Broker</h1>");
+      client.println("<form method='POST' action='/set_mqtt_broker_ip'>");
+      client.print("Byte 1: <input type='number' name='ipb1' min='1' max='255' value='");
+      client.print(EEPROM.read(EEPROMMqttIpAddr));
+      client.println("' required><br><br>");
+      client.print("Byte 2: <input type='number' name='ipb2' min='1' max='255' value='");
+      client.print(EEPROM.read(EEPROMMqttIpAddr+1));
+      client.println("' required><br><br>");
+      client.print("Byte 3: <input type='number' name='ipb3' min='1' max='255' value='");
+      client.print(EEPROM.read(EEPROMMqttIpAddr+2));
+      client.println("' required><br><br>");
+      client.print("Byte 4: <input type='number' name='ipb4' min='2' max='255' value='");
+      client.print(EEPROM.read(EEPROMMqttIpAddr+3));
       client.println("' required><br><br>");
       client.println("<button type='submit'>Invia</button>");
       client.println("</form>");

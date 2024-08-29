@@ -33,8 +33,6 @@ void loop() {
   actualTimeStamp = millis();
 
   EthernetClient ethClient = ethServer.available();
-  if(ethClient){
-    Web::loopManagement(ethClient, EEPROM_IP_ADDRESS, EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS);
-  }
+  Web::loopManagement(ethClient, EEPROM_IP_ADDRESS, EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS);
   MQTT::loopManagement(actualTimeStamp, EEPROM_INTERVAL_ADDRESS);
 }
