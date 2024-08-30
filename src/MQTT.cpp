@@ -125,6 +125,6 @@ void MQTT::loopManagement(unsigned long actualTimeStamp, uint8_t EEPROMIntervalA
   
   if (MQTTclient.connected() && actualTimeStamp - prevTimeStamp >= intervallo) {
     prevTimeStamp = actualTimeStamp;
-    MQTTclient.publish("current1","42");    
+    MQTTclient.publish("current1","42");
   }
 }
