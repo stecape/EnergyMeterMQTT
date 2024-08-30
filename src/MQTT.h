@@ -6,7 +6,7 @@
 
 namespace MQTT{
     // Funzioni per inizializzare e gestire il client MQTT
-    void setup(DueFlashStorage dueFlashStorage, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr);
+    void setup(DueFlashStorage dueFlashStorage, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr, uint8_t EEPROMIntervalAddr);
     void loopManagement(unsigned long actualTimeStamp, uint8_t EEPROMIntervalAddr);
 }
 

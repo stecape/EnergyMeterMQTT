@@ -46,7 +46,14 @@ void Web::setup(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr){
   ethServer.begin();
 }
 
-void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
+void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr, uint8_t EEPROMIntervalAddr) {
+
+  // Variabile di appoggio indirizzi in Flash
+  byte* addr;
+  // Array per leggere una unit16_t dalla Flash
+  byte byteArray[sizeof(uint16_t)];
+  // Refresh rate del sensore
+  uint16_t intervallo;
 
   EthernetClient client = ethServer.available();
   
@@ -83,8 +90,6 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
         }
       }
       Serial.println();
-      Serial.println(body.c_str());  
-
 
       client.println("HTTP/1.1 200 OK");
       client.println("Content-Type: text/html");
@@ -123,8 +128,6 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
         }
       }
       Serial.println();
-      Serial.println(body.c_str());  
-
 
       client.println("HTTP/1.1 200 OK");
       client.println("Content-Type: text/html");
@@ -132,7 +135,37 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       client.println("<html><body><h1>IP MQTT Broker Aggiornato</h1></body></html>");
       client.stop();
 
-      //Serial.println("Indirizzo IP MQTT Broker aggiornato e salvato nella EEPROM. Riavvia per renderlo effettivo");
+      Serial.println("Indirizzo IP MQTT Broker aggiornato e salvato nella EEPROM. Riavvia per renderlo effettivo");
+    }
+    else if (request.indexOf("POST /set_refresh_rate") != -1) {
+      // Legge l'header della richiesta
+      while (client.available()) {
+        String line = client.readStringUntil('\n');
+        if (line == "\r") {
+          break;
+        }
+      }
+
+      // Legge il corpo della richiesta
+      String body = client.readStringUntil('\n');
+      client.flush();
+
+      sscanf(body.c_str(), "rr=%hu", &intervallo);
+
+      memcpy(byteArray, &intervallo, sizeof(uint16_t));
+      dueFlashStorage.write(EEPROMIntervalAddr, byteArray, sizeof(uint16_t));
+
+      // Stampa il refresh rate utilizzato
+      Serial.print("Refresh rate: ");
+      Serial.println(intervallo);
+
+      client.println("HTTP/1.1 200 OK");
+      client.println("Content-Type: text/html");
+      client.println();
+      client.println("<html><body><h1>Refresh rate Aggiornato</h1></body></html>");
+      client.stop();
+
+      Serial.println("Refresh rate aggiornato e salvato nella EEPROM. Riavvia per renderlo effettivo");
     }
     else {
       client.println("HTTP/1.1 200 OK");
@@ -169,6 +202,16 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       client.println("' required><br><br>");
       client.print("Byte 4: <input type='number' name='ipb4' min='2' max='255' value='");
       client.print(dueFlashStorage.read(EEPROMMqttIpAddr+3));
+      client.println("' required><br><br>");
+      client.println("<button type='submit'>Invia</button>");
+      client.println("</form>");
+      client.println("<br><br>");
+      client.println("<h1>Imposta il refresh rate del sensore</h1>");
+      client.println("<form method='POST' action='/set_refresh_rate'>");
+      client.print("Refresh rate [ms] (min 1, max 3600000): <input type='number' name='rr' min='1' max='3600000' value='");
+      addr = dueFlashStorage.readAddress(EEPROMIntervalAddr);
+      memcpy(&intervallo, addr, sizeof(uint16_t));
+      client.print(intervallo);
       client.println("' required><br><br>");
       client.println("<button type='submit'>Invia</button>");
       client.println("</form>");
