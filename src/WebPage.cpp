@@ -52,6 +52,8 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
   byte* addr;
   // Array per leggere una unit16_t dalla Flash
   byte byteArray[sizeof(uint16_t)];
+  // Porta dell'MQTT Broker
+  uint16_t porta;
   // Refresh rate del sensore
   uint16_t intervallo;
 
@@ -137,6 +139,36 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
 
       Serial.println("Indirizzo IP MQTT Broker aggiornato e salvato nella EEPROM. Riavvia per renderlo effettivo");
     }
+    else if (request.indexOf("POST /set_mqtt_port") != -1) {
+      // Legge l'header della richiesta
+      while (client.available()) {
+        String line = client.readStringUntil('\n');
+        if (line == "\r") {
+          break;
+        }
+      }
+
+      // Legge il corpo della richiesta
+      String body = client.readStringUntil('\n');
+      client.flush();
+
+      sscanf(body.c_str(), "port=%hu", &porta);
+
+      memcpy(byteArray, &porta, sizeof(uint16_t));
+      dueFlashStorage.write(EEPROMMqttPortAddr, byteArray, sizeof(uint16_t));
+
+      // Stampa la porta utilizzata
+      Serial.print("MQTT Broker port: ");
+      Serial.println(porta);
+
+      client.println("HTTP/1.1 200 OK");
+      client.println("Content-Type: text/html");
+      client.println();
+      client.println("<html><body><h1>Porta MQTT Broker aggiornata</h1></body></html>");
+      client.stop();
+
+      Serial.println("Porta MQTT Broker aggiornata e salvata nella EEPROM. Riavvia per renderla effettiva");
+    }
     else if (request.indexOf("POST /set_refresh_rate") != -1) {
       // Legge l'header della richiesta
       while (client.available()) {
@@ -172,6 +204,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       client.println("Content-Type: text/html");
       client.println();
       client.println("<html><body>");
+
       client.println("<h1>Imposta Indirizzo IP</h1>");
       client.println("<form method='POST' action='/set_ip'>");
       client.print("Byte 1: <input type='number' name='ip1' min='1' max='255' value='");
@@ -189,6 +222,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       client.println("<button type='submit'>Invia</button>");
       client.println("</form>");
       client.println("<br><br>");
+
       client.println("<h1>Imposta Indirizzo IP MQTT Broker</h1>");
       client.println("<form method='POST' action='/set_mqtt_broker_ip'>");
       client.print("Byte 1: <input type='number' name='ipb1' min='1' max='255' value='");
@@ -206,6 +240,18 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       client.println("<button type='submit'>Invia</button>");
       client.println("</form>");
       client.println("<br><br>");
+
+      client.println("<h1>Imposta la porta dell'MQTT Broker</h1>");
+      client.println("<form method='POST' action='/set_mqtt_port'>");
+      client.print("porta dell'MQTT Broker (min: 1024, max: 49151): <input type='number' name='port' min='1024' max='49151' value='");
+      addr = dueFlashStorage.readAddress(EEPROMMqttPortAddr);
+      memcpy(&porta, addr, sizeof(uint16_t));
+      client.print(porta);
+      client.println("' required><br><br>");
+      client.println("<button type='submit'>Invia</button>");
+      client.println("</form>");
+      client.println("<br><br>");
+
       client.println("<h1>Imposta il refresh rate del sensore</h1>");
       client.println("<form method='POST' action='/set_refresh_rate'>");
       client.print("Refresh rate [ms] (min 1, max 3600000): <input type='number' name='rr' min='1' max='3600000' value='");
