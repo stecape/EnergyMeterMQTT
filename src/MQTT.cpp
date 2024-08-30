@@ -1,5 +1,5 @@
 #include "MQTT.h"
-#include <EEPROM.h>
+#include <DueFlashStorage.h>
 #include <Ethernet.h>
 
 // Dimensione dell'indirizzo IP (4 byte)
@@ -13,7 +13,7 @@ PubSubClient MQTTclient(MQTTethClient);
 // variabile per memorizzare l'ultimo momento in cui l'azione è stata eseguita
 unsigned long prevTimeStamp = 0;
 
-void MQTT::setup(uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
+void MQTT::setup(DueFlashStorage dueFlashStorage, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
   // Variabile per l'indirizzo IP
   byte ip[IP_SIZE];
   // Indirizzo IP di default
@@ -24,7 +24,7 @@ void MQTT::setup(uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
   // Legge l'indirizzo IP Mqtt broker dalla EEPROM
   bool ipValido = true;
   for (int i = 0; i < IP_SIZE; i++) {
-    ip[i] = EEPROM.read(i+EEPROMMqttIpAddr);
+    ip[i] = dueFlashStorage.read(i+EEPROMMqttIpAddr);
     if (ip[i] == 0xFF) { // Verifica se l'IP Mqtt broker in EEPROM non è valorizzato
       ipValido = false;
     }
@@ -33,7 +33,7 @@ void MQTT::setup(uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
   if (!ipValido) {
     for (int i = 0; i < IP_SIZE; i++) {
       ip[i] = defaultIP[i];
-      EEPROM.write(i+EEPROMMqttIpAddr, defaultIP[i]);
+      dueFlashStorage.write(i+EEPROMMqttIpAddr, defaultIP[i]);
     }
     Serial.println("IP Mqtt broker non valido in EEPROM, scritto IP di default.");
   } else {
@@ -52,14 +52,18 @@ void MQTT::setup(uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
   // Legge la porta dell'Mqtt broker dalla EEPROM
   bool portaValida = true;
   uint16_t porta;
-  EEPROM.get(EEPROMMqttPortAddr, porta);
+  byte byteArrayLettura[sizeof(uint16_t)];
+  dueFlashStorage.readAddress(EEPROMMqttPortAddr);
+  memcpy(&porta, byteArrayLettura, sizeof(uint16_t));
   if (porta == 0xFFFF) { // Verifica se la porta dell'Mqtt broker in EEPROM non è valorizzata
     portaValida = false;
   }
   // Se la porta dell'Mqtt broker non è valida, scrive la porta di default nella EEPROM
   if (!portaValida) {
-      porta = MQTTBrokerDefaultPort;
-      EEPROM.put(EEPROMMqttPortAddr, MQTTBrokerDefaultPort);
+    porta = MQTTBrokerDefaultPort;
+    byte byteArray[sizeof(uint16_t)]; 
+    memcpy(byteArray, &MQTTBrokerDefaultPort, sizeof(uint16_t));
+    dueFlashStorage.write(EEPROMMqttPortAddr, byteArray, sizeof(uint16_t));
     Serial.println("Porta dell'Mqtt broker non valida in EEPROM, scritta porta di default.");
   } else {
     Serial.println("Porta dell'Mqtt broker letta dalla EEPROM.");
@@ -68,7 +72,7 @@ void MQTT::setup(uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr) {
     Serial.println(porta);
   }
   
-  MQTTclient.setServer(ip, porta);
+  MQTTclient.setServer(ip, 1883);
 }
 
 // Funzione per riconnettere il client MQTT in caso di disconnessione

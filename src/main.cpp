@@ -2,9 +2,7 @@
 #include <Ethernet.h>
 #include "MQTT.h"
 #include "WebPage.h"
-
-EthernetServer ethServer(80);
-
+#include <DueFlashStorage.h>
 ///////Definizioni
 // Indirizzo in memoria EEPROM dell'IP (4byte)
 #define EEPROM_IP_ADDRESS 0
@@ -18,13 +16,15 @@ EthernetServer ethServer(80);
 ///////Inizializzazioni
 // Actual timestamp
 unsigned long actualTimeStamp = 0;
+// Scrittura ritentiva nella flash
+DueFlashStorage dueFlashStorage;
 
 void setup() {
   Serial.begin(9600);
   Serial.println();
 
-  Web::setup(ethServer, EEPROM_IP_ADDRESS);
-  MQTT::setup(EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS);
+  Web::setup(dueFlashStorage, EEPROM_IP_ADDRESS);
+  MQTT::setup(dueFlashStorage, EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS);
 
   delay(1500);
 }
@@ -32,7 +32,6 @@ void setup() {
 void loop() {
   actualTimeStamp = millis();
 
-  EthernetClient ethClient = ethServer.available();
-  Web::loopManagement(ethClient, EEPROM_IP_ADDRESS, EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS);
+  Web::loopManagement(dueFlashStorage, EEPROM_IP_ADDRESS, EEPROM_MQTT_IP_ADDRESS, EEPROM_MQTT_PORT_ADDRESS);
   MQTT::loopManagement(actualTimeStamp, EEPROM_INTERVAL_ADDRESS);
 }
