@@ -4,6 +4,12 @@
 // Dimensione dell'indirizzo IP (4 byte)
 #define IP_SIZE 4
 
+enum TYPES {
+  STRINGA,
+  INTERO,
+  IP
+};
+
 EthernetServer ethServer(80);
 
 void Web::setup(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr){
@@ -46,10 +52,89 @@ void Web::setup(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr){
   ethServer.begin();
 }
 
-void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr, uint8_t EEPROMIntervalAddr) {
-
+void generateForm(TYPES t, DueFlashStorage dueFlashStorage, EthernetClient client, const String& title, const String& _varName, uint8_t EEPROMAddr, uint16_t min, uint16_t max){
+  String varName = _varName;
+  varName.replace(" ", "_");
   // Variabile di appoggio indirizzi in Flash
   byte* addr;
+  client.print("<h1>");
+  client.print(title);
+  client.println("</h1>");
+  client.print("<form method='POST' action='/");
+  client.print(varName);
+  client.println("'>");
+  client.print(_varName);
+  switch (t) {
+    case STRINGA:
+      Serial.println("Temperature is low");
+      break;
+    case INTERO:
+      uint16_t variable;
+      client.print("' (min: ");
+      client.print(min);
+      client.print("', max: ");
+      client.print(max);
+      client.print("): ");
+      client.print(": <input type='number' name='");
+      client.print(varName);
+      client.print("' min='");
+      client.print(min);
+      client.print("' max='");
+      client.print(max);
+      client.print("' value='");
+      addr = dueFlashStorage.readAddress(EEPROMAddr);
+      memcpy(&variable, addr, sizeof(uint16_t));
+      client.print(variable);
+      break;
+    case IP:
+      client.print(": <input type='number' name='");
+      client.print(varName);
+      client.print("1' min='1' max='255' value='");
+      client.print(dueFlashStorage.read(EEPROMAddr));
+      client.print("' required>.");
+      client.print("<input type='number' name='");
+      client.print(varName);
+      client.print("2' min='1' max='255' value='");
+      client.print(dueFlashStorage.read(EEPROMAddr+1));
+      client.print("' required>.");
+      client.print("<input type='number' name='");
+      client.print(varName);
+      client.print("3' min='1' max='255' value='");
+      client.print(dueFlashStorage.read(EEPROMAddr+2));
+      client.print("' required>.");
+      client.print("<input type='number' name='");
+      client.print(varName);
+      client.print("4' min='1' max='255' value='");
+      client.print(dueFlashStorage.read(EEPROMAddr+3));
+      break;
+    default:
+      Serial.println("Error");
+      break;
+  }
+  client.println("' required><br><br>");
+  client.println("<button type='submit'>Invia</button>");
+  client.println("</form>");
+}
+
+void generateResponse(TYPES t){
+  switch (t) {
+    case STRINGA:
+      Serial.println("Temperature is low");
+      break;
+    case INTERO:
+      Serial.println("Temperature is medium");
+      break;
+    case IP:
+      Serial.println("Temperature is high");
+      break;
+    default:
+      Serial.println("Sensor error");
+      break;
+  }
+}
+
+void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr, uint8_t EEPROMIntervalAddr) {
+
   // Array per leggere una unit16_t dalla Flash
   byte byteArray[sizeof(uint16_t)];
   // Porta dell'MQTT Broker
@@ -63,7 +148,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
     String request = client.readStringUntil('\r');
     client.flush();
 
-    if (request.indexOf("POST /set_ip") != -1) {
+    if (request.indexOf("POST /IP ") != -1) {
       // Legge l'header della richiesta
       while (client.available()) {
         String line = client.readStringUntil('\n');
@@ -77,7 +162,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       client.flush();
 
       int ipBytes[IP_SIZE];
-      sscanf(body.c_str(), "ip1=%d&ip2=%d&ip3=%d&ip4=%d", &ipBytes[0], &ipBytes[1], &ipBytes[2], &ipBytes[3]);
+      sscanf(body.c_str(), "IP1=%d&IP2=%d&IP3=%d&IP4=%d", &ipBytes[0], &ipBytes[1], &ipBytes[2], &ipBytes[3]);
 
       for (int i = 0; i < IP_SIZE; i++) {
         dueFlashStorage.write(i+EEPROMIpAddr, ipBytes[i]);
@@ -101,7 +186,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
 
       Serial.println("Indirizzo IP aggiornato e salvato nella EEPROM. Riavvia per renderlo effettivo");
     }
-    else if (request.indexOf("POST /set_mqtt__broker_ip") != -1) {
+    else if (request.indexOf("POST /IP_MQTT_Broker") != -1) {
       // Legge l'header della richiesta
       while (client.available()) {
         String line = client.readStringUntil('\n');
@@ -115,7 +200,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       client.flush();
 
       int ipBytes[IP_SIZE];
-      sscanf(body.c_str(), "ipb1=%d&ipb2=%d&ipb3=%d&ipb4=%d", &ipBytes[0], &ipBytes[1], &ipBytes[2], &ipBytes[3]);
+      sscanf(body.c_str(), "IP_MQTT_Broker1=%d&IP_MQTT_Broker2=%d&IP_MQTT_Broker3=%d&IP_MQTT_Broker4=%d", &ipBytes[0], &ipBytes[1], &ipBytes[2], &ipBytes[3]);
 
       for (int i = 0; i < IP_SIZE; i++) {
         dueFlashStorage.write(i+EEPROMMqttIpAddr, ipBytes[i]);
@@ -139,7 +224,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
 
       Serial.println("Indirizzo IP MQTT Broker aggiornato e salvato nella EEPROM. Riavvia per renderlo effettivo");
     }
-    else if (request.indexOf("POST /set_mqtt_port") != -1) {
+    else if (request.indexOf("POST /Porta_MQTT_Broker") != -1) {
       // Legge l'header della richiesta
       while (client.available()) {
         String line = client.readStringUntil('\n');
@@ -152,7 +237,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       String body = client.readStringUntil('\n');
       client.flush();
 
-      sscanf(body.c_str(), "port=%hu", &porta);
+      sscanf(body.c_str(), "Porta_MQTT_Broker=%hu", &porta);
 
       memcpy(byteArray, &porta, sizeof(uint16_t));
       dueFlashStorage.write(EEPROMMqttPortAddr, byteArray, sizeof(uint16_t));
@@ -169,7 +254,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
 
       Serial.println("Porta MQTT Broker aggiornata e salvata nella EEPROM. Riavvia per renderla effettiva");
     }
-    else if (request.indexOf("POST /set_refresh_rate") != -1) {
+    else if (request.indexOf("POST /Refresh_Rate") != -1) {
       // Legge l'header della richiesta
       while (client.available()) {
         String line = client.readStringUntil('\n');
@@ -182,7 +267,7 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       String body = client.readStringUntil('\n');
       client.flush();
 
-      sscanf(body.c_str(), "rr=%hu", &intervallo);
+      sscanf(body.c_str(), "Refresh_Rate=%hu", &intervallo);
 
       memcpy(byteArray, &intervallo, sizeof(uint16_t));
       dueFlashStorage.write(EEPROMIntervalAddr, byteArray, sizeof(uint16_t));
@@ -204,63 +289,15 @@ void Web::loopManagement(DueFlashStorage dueFlashStorage, uint8_t EEPROMIpAddr, 
       client.println("Content-Type: text/html");
       client.println();
       client.println("<html><body>");
-
-      client.println("<h1>Imposta Indirizzo IP</h1>");
-      client.println("<form method='POST' action='/set_ip'>");
-      client.print("Byte 1: <input type='number' name='ip1' min='1' max='255' value='");
-      client.print(dueFlashStorage.read(EEPROMIpAddr));
-      client.println("' required><br><br>");
-      client.print("Byte 2: <input type='number' name='ip2' min='1' max='255' value='");
-      client.print(dueFlashStorage.read(EEPROMIpAddr+1));
-      client.println("' required><br><br>");
-      client.print("Byte 3: <input type='number' name='ip3' min='1' max='255' value='");
-      client.print(dueFlashStorage.read(EEPROMIpAddr+2));
-      client.println("' required><br><br>");
-      client.print("Byte 4: <input type='number' name='ip4' min='2' max='255' value='");
-      client.print(dueFlashStorage.read(EEPROMIpAddr+3));
-      client.println("' required><br><br>");
-      client.println("<button type='submit'>Invia</button>");
-      client.println("</form>");
+      
+      generateForm(IP, dueFlashStorage, client, "Imposta Indirizzo IP", "IP", EEPROMIpAddr, 0, 0);
       client.println("<br><br>");
-
-      client.println("<h1>Imposta Indirizzo IP MQTT Broker</h1>");
-      client.println("<form method='POST' action='/set_mqtt_broker_ip'>");
-      client.print("Byte 1: <input type='number' name='ipb1' min='1' max='255' value='");
-      client.print(dueFlashStorage.read(EEPROMMqttIpAddr));
-      client.println("' required><br><br>");
-      client.print("Byte 2: <input type='number' name='ipb2' min='1' max='255' value='");
-      client.print(dueFlashStorage.read(EEPROMMqttIpAddr+1));
-      client.println("' required><br><br>");
-      client.print("Byte 3: <input type='number' name='ipb3' min='1' max='255' value='");
-      client.print(dueFlashStorage.read(EEPROMMqttIpAddr+2));
-      client.println("' required><br><br>");
-      client.print("Byte 4: <input type='number' name='ipb4' min='2' max='255' value='");
-      client.print(dueFlashStorage.read(EEPROMMqttIpAddr+3));
-      client.println("' required><br><br>");
-      client.println("<button type='submit'>Invia</button>");
-      client.println("</form>");
+      generateForm(IP, dueFlashStorage, client, "Imposta Indirizzo IP MQTT Broker", "IP MQTT Broker", EEPROMMqttIpAddr, 0, 0);
       client.println("<br><br>");
-
-      client.println("<h1>Imposta la porta dell'MQTT Broker</h1>");
-      client.println("<form method='POST' action='/set_mqtt_port'>");
-      client.print("porta dell'MQTT Broker (min: 1024, max: 49151): <input type='number' name='port' min='1024' max='49151' value='");
-      addr = dueFlashStorage.readAddress(EEPROMMqttPortAddr);
-      memcpy(&porta, addr, sizeof(uint16_t));
-      client.print(porta);
-      client.println("' required><br><br>");
-      client.println("<button type='submit'>Invia</button>");
-      client.println("</form>");
+      generateForm(INTERO, dueFlashStorage, client, "Imposta la porta dell'MQTT Broker", "Porta MQTT Broker", EEPROMMqttPortAddr, 1024, 49151);
       client.println("<br><br>");
+      generateForm(INTERO, dueFlashStorage, client, "Imposta il refresh rate del sensore", "Refresh Rate", EEPROMIntervalAddr, 1, 60000);
 
-      client.println("<h1>Imposta il refresh rate del sensore</h1>");
-      client.println("<form method='POST' action='/set_refresh_rate'>");
-      client.print("Refresh rate [ms] (min 1, max 3600000): <input type='number' name='rr' min='1' max='3600000' value='");
-      addr = dueFlashStorage.readAddress(EEPROMIntervalAddr);
-      memcpy(&intervallo, addr, sizeof(uint16_t));
-      client.print(intervallo);
-      client.println("' required><br><br>");
-      client.println("<button type='submit'>Invia</button>");
-      client.println("</form>");
       client.println("</body></html>");
       client.stop();
     }
