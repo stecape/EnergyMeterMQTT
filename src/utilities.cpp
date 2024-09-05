@@ -1,6 +1,6 @@
 #include "utilities.h"
 
-void validateOrInitializeInt(DueFlashStorage dueFlashStorage, uint8_t EEPROMAddr, uint16_t& value, uint16_t defaultValue) {
+void validateOrInitializeInt(DueFlashStorage dueFlashStorage, uint16_t EEPROMAddr, uint16_t& value, uint16_t defaultValue) {
   bool valueValid = true;
   byte* addr = dueFlashStorage.readAddress(EEPROMAddr);
   memcpy(&value, addr, sizeof(uint16_t));
@@ -24,7 +24,7 @@ void validateOrInitializeInt(DueFlashStorage dueFlashStorage, uint8_t EEPROMAddr
   }
 }
 
-void validateOrInitializeIP(DueFlashStorage dueFlashStorage, uint8_t EEPROMAddr, uint8_t* ip, uint8_t* defaultIP) {
+void validateOrInitializeIP(DueFlashStorage dueFlashStorage, uint16_t EEPROMAddr, uint8_t* ip, uint8_t* defaultIP) {
   bool ipValido = true;
 
   // Legge l'indirizzo IP dalla EEPROM
@@ -56,7 +56,34 @@ void validateOrInitializeIP(DueFlashStorage dueFlashStorage, uint8_t EEPROMAddr,
   }
 }
 
-void generateForm(TYPES t, DueFlashStorage dueFlashStorage, EthernetClient client, const String& title, const String& _varName, uint8_t EEPROMAddr, uint16_t min, uint16_t max){
+void validateOrInitializeString(DueFlashStorage dueFlashStorage, uint16_t EEPROMAddr, String& value, const String& defaultValue) {
+  bool valueValid = true;
+  byte* addr = dueFlashStorage.readAddress(EEPROMAddr);
+  char buffer[100]; // Assicurati che la dimensione del buffer sia adeguata per la tua String
+  memcpy(buffer, addr, sizeof(buffer));
+  
+  value = String(buffer);
+  
+  if (value.length() == 0 || value == "INVALID") { // Verifica se il valore in EEPROM non è valorizzato o è invalido
+    valueValid = false;
+  }
+  
+  // Se il valore non è valido, scrive quello di default nella EEPROM
+  if (!valueValid) {
+    value = defaultValue;
+    byte byteArray[100];
+    value.toCharArray((char*)byteArray, sizeof(byteArray));
+    dueFlashStorage.write(EEPROMAddr, byteArray, sizeof(byteArray));
+    Serial.println("Valore non valido in EEPROM, scritto quello di default.");
+  } else {
+    Serial.println("Valore letto dalla EEPROM.");
+    // Stampa il valore utilizzato
+    Serial.print("Valore: ");
+    Serial.println(value);
+  }
+}
+
+void generateForm(TYPES t, DueFlashStorage dueFlashStorage, EthernetClient client, const String& title, const String& _varName, uint16_t EEPROMAddr, uint16_t min, uint16_t max){
   String varName = _varName;
   varName.replace(" ", "_");
   // Variabile di appoggio indirizzi in Flash

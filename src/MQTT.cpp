@@ -2,6 +2,7 @@
 #include <DueFlashStorage.h>
 #include <Ethernet.h>
 #include "utilities.h"
+#include "DEFINITIONS.h"
 
 EthernetClient MQTTethClient;
 PubSubClient MQTTclient(MQTTethClient);
@@ -10,6 +11,8 @@ PubSubClient MQTTclient(MQTTethClient);
 uint16_t intervallo;
 // Nome client
 String clientName;
+// Topic
+String topic;
 // Porta dell'Mqtt broker
 uint16_t porta;
 
@@ -17,7 +20,7 @@ uint16_t porta;
 unsigned long prevTimeStamp = 0;
 unsigned long lastReconnectAttempt = 0;
 
-void MQTT::setup(DueFlashStorage dueFlashStorage, uint8_t EEPROMMqttIpAddr, uint8_t EEPROMMqttPortAddr, uint8_t EEPROMIntervalAddr, uint8_t EEPROMclientNameAddr) {
+void MQTT::setup() {
   // Variabile per l'indirizzo IP
   byte ip[IP_SIZE];
   // Indirizzo IP di default
@@ -26,10 +29,16 @@ void MQTT::setup(DueFlashStorage dueFlashStorage, uint8_t EEPROMMqttIpAddr, uint
   uint16_t MQTTBrokerDefaultPort = 1883;
   // Refresh rate del sensore di default
   uint16_t defaultInterval = 10000;
+  // Refresh rate del sensore di default
+  String defaultTopic = "Sensor1";
+  // Default client name
+  String defaultClientName = "Pippoooo";
 
-  validateOrInitializeIP(dueFlashStorage, EEPROMMqttIpAddr, ip, defaultIP);
-  validateOrInitializeInt(dueFlashStorage, EEPROMIntervalAddr, intervallo, defaultInterval);
-  validateOrInitializeInt(dueFlashStorage, EEPROMMqttPortAddr, porta, MQTTBrokerDefaultPort);
+  validateOrInitializeIP(dueFlashStorage, EEPROM_MQTT_IP_ADDRESS, ip, defaultIP);
+  validateOrInitializeInt(dueFlashStorage, EEPROM_INTERVAL_ADDRESS, intervallo, defaultInterval);
+  validateOrInitializeInt(dueFlashStorage, EEPROM_MQTT_PORT_ADDRESS, porta, MQTTBrokerDefaultPort);
+  validateOrInitializeString(dueFlashStorage, EEPROM_TOPIC_ADDRESS, topic, defaultTopic);
+  validateOrInitializeString(dueFlashStorage, EEPROM_CLIENT_ADDRESS, clientName, defaultClientName);
 
   MQTTclient.setServer(ip, porta);
 
@@ -55,15 +64,15 @@ void reconnect(PubSubClient& client, String clientName) {
 }
 
 // Funzione per riconnettere il client MQTT in caso di disconnessione
-void MQTT::loopManagement(unsigned long actualTimeStamp, uint8_t EEPROMIntervalAddr) {
+void MQTT::loopManagement(unsigned long actualTimeStamp) {
   if (!MQTTclient.connected()) {
-    reconnect(MQTTclient, "MQTTClientTest02");
+    reconnect(MQTTclient, clientName);
   } else {
     MQTTclient.loop();
   }
   
   if (MQTTclient.connected() && actualTimeStamp - prevTimeStamp >= intervallo) {
     prevTimeStamp = actualTimeStamp;
-    MQTTclient.publish("current1","42");
+    MQTTclient.publish(topic.c_str(),"42");
   }
 }
