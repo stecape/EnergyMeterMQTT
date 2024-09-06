@@ -56,7 +56,7 @@ void validateOrInitializeIP(DueFlashStorage dueFlashStorage, uint16_t EEPROMAddr
   }
 }
 
-void validateOrInitializeString(DueFlashStorage dueFlashStorage, uint16_t EEPROMAddr, String& value, const String& defaultValue) {
+void validateOrInitializeString(DueFlashStorage dueFlashStorage, uint16_t EEPROMAddr, String& value, const String& defaultValue, bool nullable) {
   bool valueValid = true;
   byte* addr = dueFlashStorage.readAddress(EEPROMAddr);
   char buffer[100]; // Assicurati che la dimensione del buffer sia adeguata per la tua String
@@ -64,16 +64,17 @@ void validateOrInitializeString(DueFlashStorage dueFlashStorage, uint16_t EEPROM
   
   value = String(buffer);
   
-  if (value.length() == 0 || !value) { // Verifica se il valore in EEPROM non è valorizzato o è invalido
+  if (!nullable && (value.length() == 0 || !value)) { // Verifica se il valore in EEPROM non è valorizzato o è invalido
     valueValid = false;
-  }
-   // Legge la stringa dalla EEPROM
-  for (unsigned int i = 0; i < sizeof(buffer); i++) {
-    buffer[i] = dueFlashStorage.read(i + EEPROMAddr);
-    if (buffer[i] == 0xFF) { // Verifica se la stringa in EEPROM non è valorizzata
-      valueValid = false;
+  } else {
+    // Legge la stringa dalla EEPROM
+    for (unsigned int i = 0; i < sizeof(buffer); i++) {
+      buffer[i] = dueFlashStorage.read(i + EEPROMAddr);
+      if (buffer[i] == 0xFF) { // Verifica se la stringa in EEPROM non è valorizzata
+        valueValid = false;
+      }
     }
-  } 
+  }
   // Se il valore non è valido, scrive quello di default nella EEPROM
   if (!valueValid) {
     value = defaultValue;
@@ -115,9 +116,9 @@ void generateForm(TYPES t, DueFlashStorage dueFlashStorage, EthernetClient clien
       break;
     case INTERO:
       uint16_t variable;
-      client.print("' (min: ");
+      client.print(" (min: ");
       client.print(min);
-      client.print("', max: ");
+      client.print(", max: ");
       client.print(max);
       client.print("): ");
       client.print(": <input type='number' name='");

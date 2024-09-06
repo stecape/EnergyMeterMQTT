@@ -32,6 +32,8 @@ void Web::loopManagement() {
     generateResponse(INTERO, client, dueFlashStorage, "Refresh Rate", request, EEPROM_INTERVAL_ADDRESS);
     generateResponse(STRINGA, client, dueFlashStorage, "Client ID", request, EEPROM_CLIENT_ADDRESS);
     generateResponse(STRINGA, client, dueFlashStorage, "Topic", request, EEPROM_TOPIC_ADDRESS);
+    generateResponse(STRINGA, client, dueFlashStorage, "User Name", request, EEPROM_USER_NAME_ADDRESS);
+    generateResponse(STRINGA, client, dueFlashStorage, "Password", request, EEPROM_PASSWORD_ADDRESS);
 
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
@@ -49,6 +51,10 @@ void Web::loopManagement() {
     generateForm(STRINGA, dueFlashStorage, client, "Imposta il Client ID", "Client ID", EEPROM_CLIENT_ADDRESS, 0, 0);
     client.println("<br><br>");
     generateForm(STRINGA, dueFlashStorage, client, "Imposta il Topic", "Topic", EEPROM_TOPIC_ADDRESS, 0, 0);
+    client.println("<br><br>");
+    generateForm(STRINGA, dueFlashStorage, client, "Imposta lo User Name", "User Name", EEPROM_USER_NAME_ADDRESS, 0, 0);
+    client.println("<br><br>");
+    generateForm(STRINGA, dueFlashStorage, client, "Imposta la password", "Password", EEPROM_PASSWORD_ADDRESS, 0, 0);
 
     client.println("</body></html>");
     client.stop();

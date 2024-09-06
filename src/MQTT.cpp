@@ -15,6 +15,9 @@ String clientName;
 String topic;
 // Porta dell'Mqtt broker
 uint16_t porta;
+// username e password
+String userName;
+String password;
 
 // variabile per memorizzare l'ultimo momento in cui l'azione è stata eseguita
 unsigned long prevTimeStamp = 0;
@@ -30,17 +33,21 @@ void MQTT::setup() {
   // Refresh rate del sensore di default
   uint16_t defaultInterval = 10000;
   // Refresh rate del sensore di default
-  String defaultTopic = "Sensor1";
+  String defaultTopic = "Topic1";
   // Default client name
-  String defaultClientName = "Pippoooo";
+  String defaultClientName = "Client1";
+  // Default userName e password
+  String defaultUserName = "";
+  String defaultPassword = "";
 
   validateOrInitializeIP(dueFlashStorage, EEPROM_MQTT_IP_ADDRESS, ip, defaultIP);
   validateOrInitializeInt(dueFlashStorage, EEPROM_INTERVAL_ADDRESS, intervallo, defaultInterval);
   validateOrInitializeInt(dueFlashStorage, EEPROM_MQTT_PORT_ADDRESS, porta, MQTTBrokerDefaultPort);
-  validateOrInitializeString(dueFlashStorage, EEPROM_TOPIC_ADDRESS, topic, defaultTopic);
-  validateOrInitializeString(dueFlashStorage, EEPROM_CLIENT_ADDRESS, clientName, defaultClientName);
+  validateOrInitializeString(dueFlashStorage, EEPROM_TOPIC_ADDRESS, topic, defaultTopic, false);
+  validateOrInitializeString(dueFlashStorage, EEPROM_CLIENT_ADDRESS, clientName, defaultClientName, false);
+  validateOrInitializeString(dueFlashStorage, EEPROM_USER_NAME_ADDRESS, userName, defaultUserName, true);
+  validateOrInitializeString(dueFlashStorage, EEPROM_PASSWORD_ADDRESS, password, defaultPassword, true);
   MQTTclient.setServer(ip, porta);
-
 }
 
 // Funzione per riconnettere il client MQTT in caso di disconnessione
@@ -50,7 +57,15 @@ void reconnect(PubSubClient& client, String clientName) {
     if (now - lastReconnectAttempt > 5000) {
       lastReconnectAttempt = now;
       Serial.print("Attempting MQTT connection...");
-      if (client.connect(clientName.c_str())) {
+
+      bool clientConnected = false;
+      if (userName.length() > 0 && password.length() > 0) {
+        clientConnected = client.connect(clientName.c_str(), userName.c_str(), password.c_str());
+      } else {
+        clientConnected = client.connect(clientName.c_str());
+      }
+
+      if (clientConnected) {
         Serial.println("connected");
         lastReconnectAttempt = 0;
       } else {
