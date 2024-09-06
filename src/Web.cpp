@@ -1,6 +1,6 @@
 #include "Web.h"
 #include "utilities.h"
-#include "DEFINITIONS.h"
+#include "DEFINITION.h"
 
 EthernetServer ethServer(80);
 

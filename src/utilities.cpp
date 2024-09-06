@@ -64,10 +64,16 @@ void validateOrInitializeString(DueFlashStorage dueFlashStorage, uint16_t EEPROM
   
   value = String(buffer);
   
-  if (value.length() == 0 || value == "INVALID") { // Verifica se il valore in EEPROM non è valorizzato o è invalido
+  if (value.length() == 0 || !value) { // Verifica se il valore in EEPROM non è valorizzato o è invalido
     valueValid = false;
   }
-  
+   // Legge la stringa dalla EEPROM
+  for (unsigned int i = 0; i < sizeof(buffer); i++) {
+    buffer[i] = dueFlashStorage.read(i + EEPROMAddr);
+    if (buffer[i] == 0xFF) { // Verifica se la stringa in EEPROM non è valorizzata
+      valueValid = false;
+    }
+  } 
   // Se il valore non è valido, scrive quello di default nella EEPROM
   if (!valueValid) {
     value = defaultValue;
@@ -105,7 +111,7 @@ void generateForm(TYPES t, DueFlashStorage dueFlashStorage, EthernetClient clien
       strncpy(stringValue, (char*)addr, sizeof(stringValue));
       stringValue[sizeof(stringValue) - 1] = '\0'; // Assicurarsi che la stringa sia null-terminated
       client.print(stringValue);
-      client.print("' maxlength='100' required>");
+      client.print("' maxlength='100");
       break;
     case INTERO:
       uint16_t variable;

@@ -1,5 +1,5 @@
-#ifndef EEPROMADDR_H
-#define EEPROMADDR_H
+#ifndef DEFINITION_H
+#define DEFINITION_H
 
 #include <DueFlashStorage.h>
 #include <Ethernet.h>

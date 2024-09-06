@@ -2,7 +2,7 @@
 #include <DueFlashStorage.h>
 #include <Ethernet.h>
 #include "utilities.h"
-#include "DEFINITIONS.h"
+#include "DEFINITION.h"
 
 EthernetClient MQTTethClient;
 PubSubClient MQTTclient(MQTTethClient);
@@ -39,7 +39,6 @@ void MQTT::setup() {
   validateOrInitializeInt(dueFlashStorage, EEPROM_MQTT_PORT_ADDRESS, porta, MQTTBrokerDefaultPort);
   validateOrInitializeString(dueFlashStorage, EEPROM_TOPIC_ADDRESS, topic, defaultTopic);
   validateOrInitializeString(dueFlashStorage, EEPROM_CLIENT_ADDRESS, clientName, defaultClientName);
-
   MQTTclient.setServer(ip, porta);
 
 }
