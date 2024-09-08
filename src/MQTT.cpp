@@ -33,12 +33,12 @@ void MQTT::setup() {
   // Refresh rate del sensore di default
   uint16_t defaultInterval = 10000;
   // Refresh rate del sensore di default
-  String defaultTopic = "Topic1";
+  String defaultTopic = "homeassistant/Topic1";
   // Default client name
   String defaultClientName = "Client1";
   // Default userName e password
-  String defaultUserName = "";
-  String defaultPassword = "";
+  String defaultUserName = "mqttuser";
+  String defaultPassword = "mqttpassword";
 
   validateOrInitializeIP(dueFlashStorage, EEPROM_MQTT_IP_ADDRESS, ip, defaultIP);
   validateOrInitializeInt(dueFlashStorage, EEPROM_INTERVAL_ADDRESS, intervallo, defaultInterval);
